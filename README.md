@@ -34,19 +34,18 @@ Edit `yaptype.service` and ensure the paths to `python` (inside poetry env) and 
 cp yaptype.service ~/.config/systemd/user/
 systemctl --user daemon-reload
 systemctl --user enable --now yaptype.service
-
 ```
 
-(if you change the yaptype.service, you need to rerun these!)
+*    If you change the yaptype.service, you need to rerun the first two commands and then do `systemctl --user restart yaptype.service` !
 
 
 4. **Set Keyboard Shortcut**
 Go to your System Settings -> Keyboard -> Shortcuts (or your Window Manager config).
 Create a new custom shortcut:
 * **Command:** `/path/to/poetry/venv/python /path/to/repo/client.py`
-* **Shortcut:** `Ctrl + Alt + -` (or your preference)
 
-*Note*: The python path is the same as above.
+* --> This python path is the same as above.
+* **Shortcut:** `Ctrl + Alt + -` (or your preference)
 
 ## Usage
 
