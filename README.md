@@ -14,7 +14,7 @@ It listens for a global hotkey, records audio, transcribes it locally using [fas
 
 ## Installation
 
-1. **Install Dependencies**
+### 1. **Install Dependencies**
     ```bash
     sudo apt install ffmpeg  # Debian/Ubuntu
     # sudo pacman -S ffmpeg  # Arch
@@ -22,15 +22,17 @@ It listens for a global hotkey, records audio, transcribes it locally using [fas
     poetry install
     ```
 
-2. **Configure**
+### 2. **Configure**
+
 Open `server.py` to change defaults:
 * `OUTPUT_DIR`: Where transcription text files are saved (Default: `~/transcriptions/`). If you don't want to preserve them, just set this to `/tmp/`
 * `EDITOR_CMD`: The text editor to open (Default: `gnome-text-editor -n`).
 * `MODEL_SIZE`: Whisper model size (Default: `base.en`).  For options, see [here](https://github.com/openai/whisper?tab=readme-ov-file#available-models-and-languages). I recommend base or small, or tiny if you have a bad cpu.
 
-* Then edit `yaptype.service` to change the value for `OMP_NUM_THREADS`, if you want something other than the default of 8.
+Then edit `yaptype.service` to change the value for `OMP_NUM_THREADS`, if you want something other than the default of 8.
 
-3. **Setup Background Service**
+### 3. **Setup Background Service**
+
 Edit `yaptype.service` and ensure the paths to `python` (inside poetry env) and `server.py` are correct. To get the python executable path, use `poetry run which python` or `poetry env info`.
 ```bash
 cp yaptype.service ~/.config/systemd/user/
@@ -38,10 +40,10 @@ systemctl --user daemon-reload
 systemctl --user enable --now yaptype.service
 ```
 
-*    If you want to change the `yaptype.service` file, you need to copy it again, run `systemctl --user daemon-reload` again and then do `systemctl --user restart yaptype.service`!
+If you change the `yaptype.service` file, you need to copy it again, run `systemctl --user daemon-reload` again and then do `systemctl --user restart yaptype.service`!
 
 
-4. **Set Keyboard Shortcut**
+### 4. **Set Keyboard Shortcut**
 Go to your System Settings -> Keyboard -> Shortcuts (or your Window Manager config).
 Create a new custom shortcut:
 * **Command:** `/path/to/poetry/venv/python /path/to/repo/client.py`
