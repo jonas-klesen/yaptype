@@ -36,7 +36,7 @@ systemctl --user daemon-reload
 systemctl --user enable --now yaptype.service
 ```
 
-*    If you change the yaptype.service, you need to rerun the first two commands and then do `systemctl --user restart yaptype.service` !
+*    If you want to change the `yaptype.service` file, you need to copy it again, run `systemctl --user daemon-reload` again and then do `systemctl --user restart yaptype.service`!
 
 
 4. **Set Keyboard Shortcut**
