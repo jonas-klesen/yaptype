@@ -1,0 +1,13 @@
+[Unit]
+Description=YapType Transcription Service
+# We need the audio system ready
+After=pipewire.service pulseaudio.service sound.target
+
+[Service]
+# Adjust these paths to match your actual poetry env path
+ExecStart=/home/rxcky/.cache/pypoetry/virtualenvs/lissen-mSinE3hT-py3.12/bin/python /home/rxcky/repos/wayap/server.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target
