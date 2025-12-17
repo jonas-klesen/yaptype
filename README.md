@@ -22,13 +22,13 @@ It listens for a global hotkey, records audio, transcribes it locally using [fas
     poetry install
     ```
 
-2. **Configure (Optional)**
+2. **Configure**
 Open `server.py` to change defaults:
 * `OUTPUT_DIR`: Where transcription text files are saved (Default: `~/transcriptions/`). If you don't want to preserve them, just set this to `/tmp/`
 * `EDITOR_CMD`: The text editor to open (Default: `gnome-text-editor -n`).
 * `MODEL_SIZE`: Whisper model size (Default: `base.en`).  For options, see [here](https://github.com/openai/whisper?tab=readme-ov-file#available-models-and-languages). I recommend base or small, or tiny if you have a bad cpu.
 
-Then edit `yaptype.service` to change the value for `OMP_NUM_THREADS`, if you want something other than the default of 8.
+* Then edit `yaptype.service` to change the value for `OMP_NUM_THREADS`, if you want something other than the default of 8.
 
 3. **Setup Background Service**
 Edit `yaptype.service` and ensure the paths to `python` (inside poetry env) and `server.py` are correct. To get the python executable path, use `poetry run which python` or `poetry env info`.
