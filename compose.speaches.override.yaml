@@ -1,0 +1,15 @@
+services:
+  speaches:
+    environment:
+      ENABLE_UI: "false"
+      LOG_LEVEL: "info"
+      # Required so Speaches' internal OpenAI client can call its own `/v1/audio/transcriptions` endpoint.
+      # Without this, some environments end up with requests like `http://test/v1/None/v1/audio/transcriptions` (404).
+      LOOPBACK_HOST_URL: "http://127.0.0.1:8000"
+      # Keep STT models in RAM once loaded (warmup is done by `server.py`).
+      STT_MODEL_TTL: "-1"
+      WHISPER__INFERENCE_DEVICE: "cpu"
+      WHISPER__COMPUTE_TYPE: "int8"
+      WHISPER__CPU_THREADS: "8"
+      # Download at startup (first boot can take a while).
+      PRELOAD_MODELS: '["Systran/faster-distil-whisper-small.en"]'

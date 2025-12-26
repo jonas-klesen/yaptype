@@ -1,0 +1,17 @@
+[Unit]
+Description=Speaches (local OpenAI-compatible STT server)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Adjust this path to your YapType repo path.
+WorkingDirectory=/home/rxcky/repos/yaptype
+ExecStart=/usr/bin/docker compose -f speaches/compose.cpu.yaml -f compose.speaches.override.yaml up
+ExecStop=/usr/bin/docker compose -f speaches/compose.cpu.yaml -f compose.speaches.override.yaml down
+Restart=always
+RestartSec=3
+TimeoutStartSec=0
+
+[Install]
+WantedBy=default.target

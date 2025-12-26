@@ -1,12 +1,12 @@
 [Unit]
 Description=YapType Transcription Service
 # We need the audio system ready
-After=pipewire.service pulseaudio.service sound.target
+After=pipewire.service pulseaudio.service sound.target speaches.service
+Wants=speaches.service
 
 [Service]
-Environment=OMP_NUM_THREADS=8
-# Adjust this path to match your actual poetry env path. See the README
-ExecStart=/home/rxcky/.cache/pypoetry/virtualenvs/lissen-mSinE3hT-py3.12/bin/python /home/rxcky/repos/wayap/server.py
+# Hint: `poetry run which python`
+ExecStart=/home/rxcky/.cache/pypoetry/virtualenvs/yaptype-QduC9-Av-py3.12/bin/python /home/rxcky/repos/yaptype/server.py
 Restart=always
 RestartSec=3
 

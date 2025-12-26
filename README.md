@@ -1,77 +1,64 @@
-
-Blog post: [here](https://blog.jonas-klesen.de/yaptype)
+Blog post: https://blog.jonas-klesen.de/yaptype
 
 # YapType
 
-A lightweight, local yap-to-text tool for Linux. 
-It listens for a global hotkey, records audio, transcribes it locally using [faster-whisper](https://github.com/SYSTRAN/faster-whisper), and opens the text in your preferred editor. The model is pre-loaded in RAM via a background service for instant recording.
-
+Local speech-to-text on Linux.
+Press a hotkey to start/stop recording; audio is streamed to a local Speaches server and you get one transcription (no VAD/segmentation; single-speaker assumed) opened in your editor.
 
 ## Requirements
 - Python 3.12+
-- [Poetry](https://python-poetry.org/)
-- `ffmpeg` (required by whisper)
+- Poetry
+- Docker + Docker Compose (for Speaches)
 
-## Installation
-
-### 1. **Install Dependencies**
-    ```bash
-    sudo apt install ffmpeg  # Debian/Ubuntu
-    # sudo pacman -S ffmpeg  # Arch
-    
-    poetry install
-    ```
-
-### 2. **Configure**
-
-Open `server.py` to change defaults:
-* `OUTPUT_DIR`: Where transcription text files are saved (Default: `~/transcriptions/`). If you don't want to preserve them, just set this to `/tmp/`
-* `EDITOR_CMD`: The text editor to open (Default: `gnome-text-editor -n`).
-* `MODEL_SIZE`: Whisper model size (Default: `base.en`).  For options, see [here](https://github.com/openai/whisper?tab=readme-ov-file#available-models-and-languages). I recommend base or small, or tiny if you have a bad cpu.
-
-Then edit `yaptype.service` to change the value for `OMP_NUM_THREADS`, if you want something other than the default of 8.
-
-### 3. **Setup Background Service**
-
-Edit `yaptype.service` and ensure the paths to `python` (inside poetry env) and `server.py` are correct. To get the python executable path, use `poetry run which python` or `poetry env info`.
+## Install
 ```bash
+# Debian/Ubuntu (adjust for your distro)
+sudo apt install docker.io docker-compose-plugin
+
+poetry install
+```
+
+## Configure
+Defaults live in `server.py`. The main knobs:
+- `OUTPUT_DIR` (default `~/transcriptions/`)
+- `EDITOR_CMD` (default `["gnome-text-editor", "-n"]`)
+- `SPEACHES_BASE_URL` (default `http://localhost:8000`)
+- `SPEACHES_API_KEY` (optional)
+- `TRANSCRIPTION_MODEL` (default `Systran/faster-distil-whisper-small.en`)
+- `TRANSCRIPTION_LANGUAGE` (optional, e.g. `en`)
+
+If Speaches warmup fails with `Not Found`, ensure `LOOPBACK_HOST_URL` is set (this repo does that in `compose.speaches.override.yaml`).
+
+## Run as user services (recommended)
+1) Copy the unit files:
+```bash
+cp speaches.service ~/.config/systemd/user/
 cp yaptype.service ~/.config/systemd/user/
+```
+
+2) Edit them:
+- In `~/.config/systemd/user/speaches.service`, set `WorkingDirectory` to your repo path.
+- In `~/.config/systemd/user/yaptype.service`, set `ExecStart` to your Poetry venv python + this repo’s `server.py`.
+  Get the python path with `poetry run which python`.
+
+3) Enable and start:
+```bash
 systemctl --user daemon-reload
+systemctl --user enable --now speaches.service
 systemctl --user enable --now yaptype.service
 ```
 
-If you change the `yaptype.service` file, you need to copy it again, run `systemctl --user daemon-reload` again and then do `systemctl --user restart yaptype.service`!
-
-
-### 4. **Set Keyboard Shortcut**
-Go to your System Settings -> Keyboard -> Shortcuts (or your Window Manager config).
-Create a new custom shortcut:
-* **Command:** `/path/to/poetry/venv/python /path/to/repo/client.py`
-
-* --> This python path is the same as above.
-* **Shortcut:** `Ctrl + Alt + -` (or your preference)
-
-## Usage
-
-1. Press your shortcut (e.g., `Ctrl + Alt + - `) to **start** recording. A microphone icon will light up in your taskbar
-2. Speak your thought. You'll notice that the microphone privacy indicator lights up in the system menu (top-right corner) while the recording is running (on GNOME, at least).
-3. Press the shortcut again to **stop**.
-4. The transcription will process in the background and pop up in your text editor automatically.
-
-## Troubleshooting
-
-Check service logs if recording doesn't start or editor doesn't open:
-
+Optional (start services at boot even before login):
 ```bash
-journalctl --user -u yaptype.service -f
+sudo loginctl enable-linger "$USER"
 ```
 
-### Model storage path
-The code downloads the model from HuggingFace on first start and caches it in `~/.cache/huggingface/hub/`:
+## Hotkey
+Create a custom shortcut that runs:
+`/path/to/poetry/venv/python /path/to/repo/client.py`
 
-`du -sh ~/.cache/huggingface/hub/models--Systran--faster-whisper*`
-
-
-### Check memory usage
-
-You can see the memory usage by using `systemctl --user status yaptype.service`. With the base model, about 250MB of RAM are used.
+## Troubleshooting
+- Logs: `journalctl --user -u yaptype.service -f`
+- WebSocket 403: Speaches rejected the handshake (check `SPEACHES_BASE_URL`, Speaches is running, and `SPEACHES_API_KEY` if configured)
+- Install model manually:
+  - `curl -sS -X POST "http://localhost:8000/v1/models/Systran/faster-distil-whisper-small.en"`
