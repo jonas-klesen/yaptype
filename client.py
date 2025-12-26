@@ -1,19 +1,13 @@
-import socket
-import os
 import sys
 
-SOCKET_PATH = f"/run/user/{os.getuid()}/lissen_socket"
+from control import SOCKET_PATH, send_command
 
 def main():
-    if not os.path.exists(SOCKET_PATH):
+    try:
+        send_command("TOGGLE", socket_path=SOCKET_PATH)
+    except FileNotFoundError:
         print("Error: Service is not running.")
         sys.exit(1)
-
-    try:
-        client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        client.connect(SOCKET_PATH)
-        client.sendall(b"TOGGLE")
-        client.close()
     except Exception as e:
         print(f"Connection failed: {e}")
 
