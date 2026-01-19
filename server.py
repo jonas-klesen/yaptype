@@ -15,7 +15,7 @@ OUTPUT_DIR = os.path.expanduser("~") + "/transcriptions/"
 # Editor command (split into list for subprocess)
 EDITOR_CMD = ["gnome-text-editor", "-n"]
 # Model Settings
-MODEL_SIZE = "base.en"
+MODEL_SIZE = "medium.en"
 COMPUTE_TYPE = "int8"
 # Socket for communication
 SOCKET_PATH = f"/run/user/{os.getuid()}/lissen_socket"
@@ -26,6 +26,9 @@ class TranscriptionServer:
         self.audio_data = []
         self.fs = 16000
         self.server_socket = None
+        self.recording_start_time = None
+        self.last_callback_time = None
+        self.callback_count = 0
 
         print(f"[{datetime.now().time()}] Loading Whisper model ({MODEL_SIZE})...")
         self.model = WhisperModel(MODEL_SIZE, device="cpu", compute_type=COMPUTE_TYPE)
@@ -35,22 +38,30 @@ class TranscriptionServer:
         print(">> Starting recording...")
         self.recording = True
         self.audio_data = []
+        self.callback_count = 0
+        self.recording_start_time = datetime.now()
+        self.last_callback_time = self.recording_start_time
         # Use default input device
         self.stream = sd.InputStream(callback=self.audio_callback, channels=1, samplerate=self.fs)
         self.stream.start()
 
     def stop_recording(self):
         if not self.recording: return
-        print(">> Stopping recording...")
+        recording_duration = (datetime.now() - self.recording_start_time).total_seconds()
+        print(f">> Stopping recording... (wall time: {recording_duration:.2f}s, callbacks: {self.callback_count})")
         self.recording = False
         self.stream.stop()
         self.stream.close()
-        
+
         # Process in a separate thread so we don't block the socket loop
         threading.Thread(target=self.process_audio).start()
 
     def audio_callback(self, indata, frames, time, status):
+        if status:
+            print(f"   [callback status: {status}]")
         if self.recording:
+            self.callback_count += 1
+            self.last_callback_time = datetime.now()
             self.audio_data.append(indata.copy())
 
     def process_audio(self):
@@ -61,11 +72,15 @@ class TranscriptionServer:
         print(">> Transcribing...")
         # Concatenate audio chunks
         audio_np = np.concatenate(self.audio_data, axis=0).flatten()
-        
+
+        # Diagnostic info
+        audio_duration = len(audio_np) / self.fs
+        print(f"   Audio chunks: {len(self.audio_data)}, samples: {len(audio_np)}, duration: {audio_duration:.2f}s")
+
         # Transcribe
         segments, info = self.model.transcribe(audio_np, beam_size=5)
         text = " ".join([segment.text for segment in segments]).strip()
-        
+
         print(f"Result: {text}")
         self.save_and_open(text)
 
