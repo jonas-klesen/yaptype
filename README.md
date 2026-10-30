@@ -1,23 +1,24 @@
 
-Blog post: [here](https://blog.jonas-klesen.de/yaptype)
+Blog post: [here](https://jonas-klesen.de/blog/yaptype/)
 
 # YapType
 
 A lightweight, local yap-to-text tool for Linux. 
-It listens for a global hotkey, records audio, transcribes it locally using [faster-whisper](https://github.com/SYSTRAN/faster-whisper), and opens the text in your preferred editor. The model is pre-loaded in RAM via a background service for instant recording.
+It listens for a global hotkey, records audio, transcribes it locally using [faster-whisper](https://github.com/SYSTRAN/faster-whisper), copies the text to the clipboard, and opens it in your preferred editor. The model is pre-loaded in RAM via a background service for instant recording.
 
 
 ## Requirements
 - Python 3.12+
 - [Poetry](https://python-poetry.org/)
-- `ffmpeg` (required by whisper)
+- PortAudio (required by sounddevice)
+- Optional: `wl-clipboard` (Wayland) or `xclip` (X11), to copy each transcription to the clipboard
 
 ## Installation
 
 ### 1. **Install Dependencies**
     ```bash
-    sudo apt install ffmpeg  # Debian/Ubuntu
-    # sudo pacman -S ffmpeg  # Arch
+    sudo apt install libportaudio2 wl-clipboard xclip  # Debian/Ubuntu
+    # sudo pacman -S portaudio wl-clipboard xclip  # Arch
     
     poetry install
     ```
@@ -25,9 +26,9 @@ It listens for a global hotkey, records audio, transcribes it locally using [fas
 ### 2. **Configure**
 
 Open `server.py` to change defaults:
-* `OUTPUT_DIR`: Where transcription text files are saved (Default: `~/transcriptions/`). If you don't want to preserve them, just set this to `/tmp/`
+* `OUTPUT_DIR`: Where transcription text files are saved (Default: `~/transcriptions/`, created when needed). If you don't want to preserve them, just set this to `/tmp/`
 * `EDITOR_CMD`: The text editor to open (Default: `gnome-text-editor -n`).
-* `MODEL_SIZE`: Whisper model size (Default: `base.en`).  For options, see [here](https://github.com/openai/whisper?tab=readme-ov-file#available-models-and-languages). I recommend base or small, or tiny if you have a bad cpu.
+* `MODEL_SIZE`: Whisper model size (Default: `medium.en`).  For options, see [here](https://github.com/openai/whisper?tab=readme-ov-file#available-models-and-languages). If that is too slow or too big for your machine, try small or base, or tiny if you have a bad cpu.
 
 Then edit `yaptype.service` to change the value for `OMP_NUM_THREADS`, if you want something other than the default of 8.
 
@@ -56,7 +57,7 @@ Create a new custom shortcut:
 1. Press your shortcut (e.g., `Ctrl + Alt + - `) to **start** recording. A microphone icon will light up in your taskbar
 2. Speak your thought. You'll notice that the microphone privacy indicator lights up in the system menu (top-right corner) while the recording is running (on GNOME, at least).
 3. Press the shortcut again to **stop**.
-4. The transcription will process in the background and pop up in your text editor automatically.
+4. The transcription will process in the background, land on your clipboard, and pop up in your text editor automatically.
 
 ## Troubleshooting
 
@@ -74,4 +75,4 @@ The code downloads the model from HuggingFace on first start and caches it in `~
 
 ### Check memory usage
 
-You can see the memory usage by using `systemctl --user status yaptype.service`. With the base model, about 250MB of RAM are used.
+You can see the memory usage by using `systemctl --user status yaptype.service`. With the default `medium.en` model, about 1.1GB of RAM are used while idle, and about 1.8GB while transcribing.

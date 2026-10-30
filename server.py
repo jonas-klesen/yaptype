@@ -14,6 +14,8 @@ from faster_whisper import WhisperModel
 OUTPUT_DIR = os.path.expanduser("~") + "/transcriptions/" 
 # Editor command (split into list for subprocess)
 EDITOR_CMD = ["gnome-text-editor", "-n"]
+# Clipboard commands, tried in order until one works (wl-copy fails outside Wayland)
+CLIPBOARD_CMDS = [["wl-copy"], ["xclip", "-selection", "clipboard"]]
 # Model Settings
 MODEL_SIZE = "medium.en"
 COMPUTE_TYPE = "int8"
@@ -87,12 +89,15 @@ class TranscriptionServer:
     def save_and_open(self, text):
         if not text: return
 
+        self.copy_to_clipboard(text)
+
         # Generate filename with timestamp
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         filename = f"transcription_{timestamp}.txt"
         filepath = os.path.join(OUTPUT_DIR, filename)
 
         # Write to file
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(text)
         
@@ -105,6 +110,17 @@ class TranscriptionServer:
             subprocess.Popen(EDITOR_CMD + [filepath], env=env)
         except Exception as e:
             print(f"Failed to open editor: {e}")
+
+    def copy_to_clipboard(self, text):
+        for cmd in CLIPBOARD_CMDS:
+            try:
+                # These tools stay in the background to serve the clipboard, so they must not hold our pipes
+                subprocess.run(cmd, input=text.encode("utf-8"), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True, timeout=5)
+            except (OSError, subprocess.SubprocessError):
+                continue
+            print(f"Copied to clipboard with {cmd[0]}")
+            return
+        print("Failed to copy to clipboard: install wl-clipboard or xclip")
 
     def run(self):
         # Ensure socket cleanup
